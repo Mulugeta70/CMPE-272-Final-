@@ -12,6 +12,7 @@ import socket
 import ssl
 import struct
 import sys
+import time
 
 HOST = os.environ.get("RECEIVER_HOST", "127.0.0.1")
 PORT = int(os.environ.get("RECEIVER_PORT", "9443"))
@@ -44,6 +45,7 @@ def main() -> None:
 
             sha256 = hashlib.sha256()
             sent = 0
+            t_start = time.monotonic()
 
             with open(file_path, "rb") as f:
                 while True:
@@ -66,8 +68,11 @@ def main() -> None:
             tls.sendall(digest)
             # Wait for receiver's ACK before closing – prevents SSL close_notify race
             ack = tls.recv(1)
+            elapsed = time.monotonic() - t_start
             status = "OK" if ack == b"\x00" else "INTEGRITY FAIL"
+            mbps = (file_size / (1 << 20)) / elapsed if elapsed > 0 else 0
             print(f"\n[+] Done  SHA-256={sha256.hexdigest()}  receiver={status}")
+            print(f"[+] Throughput: {mbps:.1f} MiB/s  elapsed={elapsed:.1f}s")
 
 
 if __name__ == "__main__":

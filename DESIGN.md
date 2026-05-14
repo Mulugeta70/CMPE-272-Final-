@@ -161,6 +161,39 @@ nonce uses counter = num_chunks
 
 ---
 
+## Forward Secrecy — Why It Matters Here
+
+Both approaches provide forward secrecy: compromise of a long-lived key after
+the transfer is complete does not expose the file contents.
+
+- **Approach A**: TLS 1.3 always performs a fresh ECDHE key exchange. Even if
+  the server's RSA private key (`server.key`) is stolen later, past session
+  keys cannot be reconstructed because they were derived from ephemeral keys
+  that are deleted after the handshake.
+- **Approach B**: Each session generates a fresh X25519 key pair. Even if
+  the Ed25519 signing key is stolen, it was only used to authenticate the
+  ephemeral key — not to encrypt data. The session key derived via HKDF from
+  the ephemeral ECDH is gone once the connection closes.
+
+**Why this matters for a 4 GB file transfer**: Large files are high-value
+targets. An attacker may record the ciphertext now and wait to obtain the
+long-lived keys later ("harvest now, decrypt later"). Forward secrecy makes
+that strategy useless — the session key was ephemeral and no longer exists.
+
+---
+
+## Crypto Library Justification
+
+| Library | Used in | Why chosen |
+|---------|---------|------------|
+| Python `ssl` stdlib | Approach A | Wraps OpenSSL/BoringSSL; FIPS-audited; zero extra dependencies |
+| `cryptography` (PyCA) | Approach B | Actively maintained; audited; exposes X25519, Ed25519, ChaCha20-Poly1305, HKDF with correct defaults |
+
+No hand-rolled cipher implementations are used anywhere. Both libraries are
+on the professor's approved list.
+
+---
+
 ## Why the Two Approaches Differ Architecturally
 
 | Dimension            | Approach A (mTLS)            | Approach B (App-Layer Envelope)    |

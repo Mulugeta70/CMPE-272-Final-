@@ -15,6 +15,7 @@ import os
 import socket
 import struct
 import sys
+import time
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
@@ -117,6 +118,7 @@ def main() -> None:
         sha256 = hashlib.sha256()
         sent = 0
         counter = 0
+        t_start = time.monotonic()
 
         with open(file_path, "rb") as f:
             while True:
@@ -139,7 +141,10 @@ def main() -> None:
         file_hash = sha256.digest()
         enc_hash = chacha.encrypt(make_nonce(counter), file_hash, None)
         send_framed(sock, enc_hash)
+        elapsed = time.monotonic() - t_start
+        mbps = (file_size / (1 << 20)) / elapsed if elapsed > 0 else 0
         print(f"\n[+] Done  SHA-256={sha256.hexdigest()}")
+        print(f"[+] Throughput: {mbps:.1f} MiB/s  elapsed={elapsed:.1f}s")
 
 
 if __name__ == "__main__":

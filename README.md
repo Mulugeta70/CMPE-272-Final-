@@ -128,3 +128,23 @@ python3 run_test.py
 Both approaches use **1 MB chunks** (`CHUNK_SIZE = 1 * 1024 * 1024`).
 This keeps memory usage constant regardless of file size and matches
 typical TLS record / socket buffer sizing without excessive overhead per chunk.
+
+---
+
+## Crypto library justification (Section 5.1)
+
+| Library | Approach | Justification |
+|---------|----------|---------------|
+| Python `ssl` stdlib | A | Ships with CPython; wraps OpenSSL/BoringSSL; no extra install needed |
+| `cryptography` (PyCA) | B | Actively maintained, audited; provides X25519, Ed25519, ChaCha20-Poly1305, HKDF; on professor's approved list |
+
+Neither library is exotic. No custom cipher code exists anywhere in this project.
+
+---
+
+## Forward secrecy note
+
+Both approaches provide forward secrecy. A recorded ciphertext cannot be
+decrypted later even if the long-lived keys are later stolen, because each
+session derives its encryption key from ephemeral keys that are discarded
+after the handshake. See DESIGN.md for the full explanation.
