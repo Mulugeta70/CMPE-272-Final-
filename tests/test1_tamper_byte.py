@@ -74,12 +74,12 @@ with socket.socket() as raw:
 out_a = os.path.join(BASE, "tamper_out_a.bin")
 recv = subprocess.Popen(
     ["python3", os.path.join(BASE,"approach-a-mtls","receiver.py"), out_a],
-    stderr=subprocess.STDOUT
+    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
 )
 time.sleep(1.5)
 send = subprocess.Popen(
     ["python3", rogue_sender_a, tampered, SMALL],
-    stderr=subprocess.STDOUT
+    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
 )
 send.wait(); recv.wait()
 
@@ -179,12 +179,12 @@ with socket.socket() as sock:
 out_b = os.path.join(BASE, "tamper_out_b.bin")
 recv2 = subprocess.Popen(
     ["python3", os.path.join(BASE,"approach-b-envelope","receiver.py"), out_b],
-    stderr=subprocess.STDOUT
+    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
 )
 time.sleep(1.5)
 send2 = subprocess.Popen(
     ["python3", tampered_sender, SMALL],
-    stderr=subprocess.STDOUT
+    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
 )
 send2.wait(); recv2.wait()
 
