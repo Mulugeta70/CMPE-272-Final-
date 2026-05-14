@@ -1,0 +1,15 @@
+# Large test binary files – generate locally with dd or python
+*.bin
+
+# Temp files written during transfer
+*.tmp
+
+# Rogue/test cert artifacts
+tests/rogue_certs/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Generated helper scripts (created at test runtime)
+tests/_*.py
