@@ -4,6 +4,8 @@ Two architecturally distinct approaches for securely transferring a large file
 over an untrusted network, both satisfying CIAA (Confidentiality, Integrity,
 Authenticity, Availability).
 
+---
+
 ## Prerequisites
 
 ```bash
@@ -33,15 +35,11 @@ python3 -c "open('test_4gb.bin','wb').write(b'\0'*4*1024*1024*1024)"
 Both sides present X.509 certificates signed by a shared CA — that is mutual
 authentication. TLS handles AEAD (AES-256-GCM) per record automatically.
 
-### 1. Generate certificates (one time)
+> **Note:** Certificates are pre-generated and included in the repo under
+> `approach-a-mtls/certs/`. Run `bash gen_certs.sh` only if you want to
+> regenerate them.
 
-```bash
-cd approach-a-mtls
-bash gen_certs.sh
-# Produces: certs/ca.crt  certs/server.{crt,key}  certs/client.{crt,key}
-```
-
-### 2. Start the receiver (terminal 1)
+### 1. Start the receiver (terminal 1)
 
 ```bash
 cd approach-a-mtls
@@ -49,17 +47,17 @@ python3 receiver.py ../received_a.bin
 # Listens on 127.0.0.1:9443
 ```
 
-### 3. Run the sender (terminal 2)
+### 2. Run the sender (terminal 2)
 
 ```bash
 cd approach-a-mtls
 python3 sender.py ../test_4gb.bin
 ```
 
-### 4. Verify hashes match
+### 3. Verify hashes match
 
 ```bash
-cd ..
+# Run from the project root (secure-transfer/)
 sha256sum test_4gb.bin received_a.bin
 ```
 
@@ -73,16 +71,11 @@ Both lines must show the same SHA-256 hex digest.
 application layer using X25519 ECDH + Ed25519 mutual auth + ChaCha20-Poly1305
 AEAD per chunk. Gives explicit forward secrecy and does not depend on TLS.
 
-### 1. Generate signing key pairs (one time)
+> **Note:** Ed25519 signing key pairs are pre-generated and included in the
+> repo under `approach-b-envelope/keys/`. Run `python3 gen_keys.py` only if
+> you want to regenerate them.
 
-```bash
-cd approach-b-envelope
-python3 gen_keys.py
-# Produces: keys/sender_signing.pem  keys/sender_signing_pub.pem
-#           keys/receiver_signing.pem  keys/receiver_signing_pub.pem
-```
-
-### 2. Start the receiver (terminal 1)
+### 1. Start the receiver (terminal 1)
 
 ```bash
 cd approach-b-envelope
@@ -90,38 +83,63 @@ python3 receiver.py ../received_b.bin
 # Listens on 127.0.0.1:9444
 ```
 
-### 3. Run the sender (terminal 2)
+### 2. Run the sender (terminal 2)
 
 ```bash
 cd approach-b-envelope
 python3 sender.py ../test_4gb.bin
 ```
 
-### 4. Verify hashes match
+### 3. Verify hashes match
 
 ```bash
-cd ..
+# Run from the project root (secure-transfer/)
 sha256sum test_4gb.bin received_b.bin
 ```
 
 ---
 
-## Environment variables
+## Threat Model Tests
 
-| Variable        | Default     | Effect                        |
-|-----------------|-------------|-------------------------------|
-| BIND_HOST       | 127.0.0.1   | Address the receiver binds to |
-| BIND_PORT       | 9443 / 9444 | Port the receiver listens on  |
-| RECEIVER_HOST   | 127.0.0.1   | Address the sender connects to |
-| RECEIVER_PORT   | 9443 / 9444 | Port the sender connects to   |
+Three automated tests verify the security properties of both approaches:
+
+```bash
+# Run from the project root (secure-transfer/)
+
+# Test 1: Tamper a byte mid-transfer → receiver detects and rejects
+python3 tests/test1_tamper_byte.py
+
+# Test 2: Kill connection at 80% → no partial file left on disk
+python3 tests/test2_kill_connection.py
+
+# Test 3: Wrong key / no certificate → connection rejected immediately
+python3 tests/test3_wrong_key.py
+```
+
+All three tests should print `[+] PASS` for both approaches.
 
 ---
 
 ## Run both approaches at once (automated test)
 
 ```bash
+# Run from the project root (secure-transfer/)
 python3 run_test.py
 ```
+
+Runs Approach A then Approach B sequentially, transfers the 4 GB file through
+each, and verifies SHA-256 matches on both sides.
+
+---
+
+## Environment variables
+
+| Variable        | Default     | Effect                         |
+|-----------------|-------------|--------------------------------|
+| BIND_HOST       | 127.0.0.1   | Address the receiver binds to  |
+| BIND_PORT       | 9443 / 9444 | Port the receiver listens on   |
+| RECEIVER_HOST   | 127.0.0.1   | Address the sender connects to |
+| RECEIVER_PORT   | 9443 / 9444 | Port the sender connects to    |
 
 ---
 
@@ -133,18 +151,18 @@ typical TLS record / socket buffer sizing without excessive overhead per chunk.
 
 ---
 
-## Crypto library justification (Section 5.1)
+## Crypto library justification
 
-| Library | Approach | Justification |
-|---------|----------|---------------|
-| Python `ssl` stdlib | A | Ships with CPython; wraps OpenSSL/BoringSSL; no extra install needed |
-| `cryptography` (PyCA) | B | Actively maintained, audited; provides X25519, Ed25519, ChaCha20-Poly1305, HKDF; on professor's approved list |
+| Library               | Approach | Justification                                                                 |
+|-----------------------|----------|-------------------------------------------------------------------------------|
+| Python `ssl` stdlib   | A        | Ships with CPython; wraps OpenSSL/BoringSSL; no extra install needed          |
+| `cryptography` (PyCA) | B        | Actively maintained, audited; provides X25519, Ed25519, ChaCha20-Poly1305, HKDF; on professor's approved list |
 
 Neither library is exotic. No custom cipher code exists anywhere in this project.
 
 ---
 
-## Forward secrecy note
+## Forward secrecy
 
 Both approaches provide forward secrecy. A recorded ciphertext cannot be
 decrypted later even if the long-lived keys are later stolen, because each
