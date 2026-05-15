@@ -99,10 +99,11 @@ generate ephemeral X25519 key pair     generate ephemeral X25519 key pair
          │       receiver_eph_x25519_pub) (64)  │
          │  receiver_eph_x25519_pub (32)        │
          │<─────────────────────────────────────│
-         verify sig                             │
+         verify sig                             verify sig
+         │                                      │
          ECDH(sender_eph_priv,                  ECDH(receiver_eph_priv,
               receiver_eph_pub)                      sender_eph_pub)
-         ─────── same shared secret ──────────────────────────
+         ──────────── same shared secret ────────────────────
          session_key = HKDF(shared, info="secure-transfer-v1")
          │                                      │
          │  [4-byte len][ChaCha20-Poly1305      │
@@ -203,5 +204,5 @@ on the professor's approved list.
 | Authentication basis | X.509 certificates + CA      | Ed25519 signing keys (no CA)       |
 | Key exchange         | TLS internal ECDHE           | Explicit X25519 ECDH + HKDF        |
 | Nonce management     | Handled by TLS               | Explicit per-chunk counter         |
-| Dependency           | OpenSSL / ssl stdlib          | `cryptography` library             |
+| Dependency           | OpenSSL / ssl stdlib         | `cryptography` library             |
 | Forward secrecy      | TLS 1.3 (automatic)          | Explicit ephemeral X25519          |
