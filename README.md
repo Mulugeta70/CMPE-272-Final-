@@ -59,7 +59,8 @@ python3 sender.py ../test_4gb.bin
 ### 4. Verify hashes match
 
 ```bash
-sha256sum ../test_4gb.bin ../received_a.bin
+cd ..
+sha256sum test_4gb.bin received_a.bin
 ```
 
 Both lines must show the same SHA-256 hex digest.
@@ -78,7 +79,7 @@ AEAD per chunk. Gives explicit forward secrecy and does not depend on TLS.
 cd approach-b-envelope
 python3 gen_keys.py
 # Produces: keys/sender_signing.pem  keys/sender_signing_pub.pem
-#           keys/receiver_signing.pem keys/receiver_signing_pub.pem
+#           keys/receiver_signing.pem  keys/receiver_signing_pub.pem
 ```
 
 ### 2. Start the receiver (terminal 1)
@@ -99,7 +100,8 @@ python3 sender.py ../test_4gb.bin
 ### 4. Verify hashes match
 
 ```bash
-sha256sum ../test_4gb.bin ../received_b.bin
+cd ..
+sha256sum test_4gb.bin received_b.bin
 ```
 
 ---
@@ -110,7 +112,7 @@ sha256sum ../test_4gb.bin ../received_b.bin
 |-----------------|-------------|-------------------------------|
 | BIND_HOST       | 127.0.0.1   | Address the receiver binds to |
 | BIND_PORT       | 9443 / 9444 | Port the receiver listens on  |
-| RECEIVER_HOST   | 127.0.0.1   | Address the sender connects to|
+| RECEIVER_HOST   | 127.0.0.1   | Address the sender connects to |
 | RECEIVER_PORT   | 9443 / 9444 | Port the sender connects to   |
 
 ---
